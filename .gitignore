@@ -31,3 +31,8 @@ android/
 *.njsproj
 *.sln
 *.sw?
+
+# Release signing (NEVER commit these)
+*.keystore
+*.jks
+keystore.properties

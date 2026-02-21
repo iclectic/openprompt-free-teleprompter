@@ -32,7 +32,7 @@ const config: CapacitorConfig = {
     scheme: 'OpenPrompt',
   },
   android: {
-    allowMixedContent: true,
+    allowMixedContent: false,
     backgroundColor: '#0f1117',
   },
 };

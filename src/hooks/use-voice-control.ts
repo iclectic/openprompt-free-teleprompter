@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { Capacitor } from '@capacitor/core';
 
 interface SpeechRecognitionResultItem {
   transcript: string;
@@ -76,6 +77,11 @@ export function useVoiceControl({ onCommand, enabled }: UseVoiceControlOptions) 
   onCommandRef.current = onCommand;
 
   useEffect(() => {
+    const isAndroidNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+    if (isAndroidNative) {
+      setSupported(false);
+      return;
+    }
     const win = window as Window & { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown };
     setSupported(!!(win.SpeechRecognition || win.webkitSpeechRecognition));
   }, []);

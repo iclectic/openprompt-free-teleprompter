@@ -12,8 +12,10 @@ import { toast } from 'sonner';
 
 const Settings = () => {
   const navigate = useNavigate();
-  const { user, isGuest, signOut } = useAuth();
+  const { user, isGuest, signOut, firebaseAvailable } = useAuth();
   const [settings, setSettings] = useState<AppSettings>(getSettings());
+  const privacyUrl = import.meta.env.VITE_PRIVACY_URL || '';
+  const termsUrl = import.meta.env.VITE_TERMS_URL || '';
 
   const update = (partial: Partial<AppSettings>) => {
     const updated = saveSettings(partial);
@@ -174,14 +176,34 @@ const Settings = () => {
               <div>
                 <h4 className="text-sm font-medium text-foreground mb-1">Privacy Promise</h4>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  All your scripts are stored locally on your device. OpenPrompt does not collect,
-                  upload, or share your content. No account is required. Analytics, if enabled,
-                  only collect anonymous usage patterns — never your script content.
+                  Your scripts are stored locally on your device and never uploaded. No account is required.
+                  {firebaseAvailable && (
+                    <> If you sign in, Firebase Authentication processes basic account info (such as name and email) to provide login.</>
+                  )} OpenPrompt does not share your script content.
                 </p>
               </div>
             </div>
           </div>
         </Section>
+
+        {(privacyUrl || termsUrl) && (
+          <Section title="Legal">
+            {termsUrl && (
+              <Button variant="outline" className="w-full touch-target justify-start" asChild>
+                <a href={termsUrl} target="_blank" rel="noreferrer">
+                  Terms of Service
+                </a>
+              </Button>
+            )}
+            {privacyUrl && (
+              <Button variant="outline" className="w-full touch-target justify-start" asChild>
+                <a href={privacyUrl} target="_blank" rel="noreferrer">
+                  Privacy Policy
+                </a>
+              </Button>
+            )}
+          </Section>
+        )}
 
         {/* Account */}
         <Section title="Account">
