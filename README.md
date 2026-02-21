@@ -98,7 +98,7 @@ VITE_FIREBASE_APP_ID=your-app-id
 
 ## Legal Links (Recommended for Store Release)
 
-Add your Terms of Service and Privacy Policy URLs to enable in-app links:
+Terms of Service and Privacy Policy URLs to enable in-app links:
 ```
 VITE_TERMS_URL=https://example.com/terms
 VITE_PRIVACY_URL=https://example.com/privacy
