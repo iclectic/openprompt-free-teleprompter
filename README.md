@@ -106,7 +106,7 @@ VITE_PRIVACY_URL=https://your-domain.com/privacy.html
 ```
 
 For GitHub Pages on this repository, the privacy-policy URL will be:
-`https://iclectic.github.io/openprompt-free-teleprompter/privacy.html`
+`https://cuevora.com/privacy.html`
 
 ---
 

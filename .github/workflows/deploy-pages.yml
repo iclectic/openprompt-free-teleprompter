@@ -19,7 +19,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      VITE_APP_BASE_PATH: /openprompt-free-teleprompter/
+      VITE_APP_BASE_PATH: /
       VITE_TERMS_URL: /terms.html
       VITE_PRIVACY_URL: /privacy.html
     steps:
