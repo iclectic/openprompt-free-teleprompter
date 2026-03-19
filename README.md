@@ -2,6 +2,14 @@
 
 A full-featured, free teleprompter app for iOS, Android, and the web. Built with React, Vite, TailwindCSS, and Capacitor.
 
+## License
+
+This project is open source under the Apache-2.0 license. See `LICENSE`.
+
+## Trademark Notice
+
+The code is open source, but the `Cuevora` name, logo, and brand assets are reserved. See `TRADEMARKS.md`.
+
 ## Features
 
 ### Teleprompter
@@ -99,7 +107,7 @@ VITE_FIREBASE_APP_ID=your-app-id
 ## Legal Links (Recommended for Store Release)
 
 Static legal pages already exist at `public/terms.html` and `public/privacy.html`.
-If you deploy this site, use the fully qualified URLs for those pages to enable in-app links and to populate the Play Console listing:
+When configuring a deployment for store release, use the fully qualified URLs for those pages to enable in-app links and to populate the Play Console listing:
 ```
 VITE_TERMS_URL=https://your-domain.com/terms.html
 VITE_PRIVACY_URL=https://your-domain.com/privacy.html
