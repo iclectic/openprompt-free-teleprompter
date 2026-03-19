@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'app.openprompt.teleprompter',
-  appName: 'OpenPrompt',
+  appName: 'Cuevora',
   webDir: 'dist',
   server: {
     androidScheme: 'https',

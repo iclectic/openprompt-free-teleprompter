@@ -29,7 +29,7 @@ const Settings = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `openprompt-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `cuevora-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success('Backup exported');
@@ -180,7 +180,7 @@ const Settings = () => {
                   Your scripts are stored locally on your device and never uploaded. No account is required.
                   {firebaseAvailable && (
                     <> If you sign in, Firebase Authentication processes basic account info (such as name and email) to provide login.</>
-                  )} OpenPrompt does not share your script content.
+                  )} Cuevora does not share your script content.
                 </p>
               </div>
             </div>
@@ -259,7 +259,7 @@ const Settings = () => {
         </Section>
 
         <p className="text-center text-xs text-muted-foreground pb-8">
-          OpenPrompt v1.0 · Teleprompter features, actually free.
+          Cuevora v1.0 · Teleprompter features, actually free.
         </p>
       </div>
     </div>

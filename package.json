@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "cap:init": "cap init OpenPrompt app.openprompt.teleprompter --web-dir dist",
+    "cap:init": "cap init Cuevora app.openprompt.teleprompter --web-dir dist",
     "cap:add:ios": "cap add ios",
     "cap:add:android": "cap add android",
     "cap:sync": "cap sync",

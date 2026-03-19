@@ -33,7 +33,7 @@ const svg = `<svg width="1024" height="500" viewBox="0 0 1024 500" xmlns="http:/
   <rect x="260" y="410" width="80" height="8" rx="4" fill="white" opacity="0.15"/>
 
   <!-- App name text -->
-  <text x="520" y="220" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="bold" fill="white" letter-spacing="-1">OpenPrompt</text>
+  <text x="520" y="220" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="bold" fill="white" letter-spacing="-1">Cuevora</text>
 
   <!-- Tagline -->
   <text x="520" y="275" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#10b981" font-weight="600">Free Teleprompter</text>

@@ -9,7 +9,7 @@ const slides = [
   {
     icon: Play,
     title: 'Your words, your pace',
-    description: 'OpenPrompt is a free teleprompter built for creators, speakers, and professionals. Paste your script and start prompting in seconds.',
+    description: 'Cuevora is a free teleprompter built for creators, speakers, and professionals. Paste your script and start prompting in seconds.',
     accent: 'Teleprompter features, actually free.',
   },
   {

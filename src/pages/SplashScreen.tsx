@@ -65,7 +65,7 @@ const SplashScreen = ({ onComplete, minDuration = 2000 }: SplashScreenProps) => 
         className="text-3xl font-bold tracking-tight"
         style={{ color: '#f0f0f0' }}
       >
-        OpenPrompt
+        Cuevora
       </h1>
 
       {/* Tagline */}

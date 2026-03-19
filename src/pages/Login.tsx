@@ -74,7 +74,7 @@ const Login = () => {
           transition={{ delay: 0.2, duration: 0.5 }}
           className="text-3xl font-bold tracking-tight text-foreground mb-2"
         >
-          Welcome to OpenPrompt
+          Welcome to Cuevora
         </motion.h1>
 
         <motion.p

@@ -1,6 +1,6 @@
 {
-  "name": "OpenPrompt - Free Teleprompter",
-  "short_name": "OpenPrompt",
+  "name": "Cuevora - Free Teleprompter",
+  "short_name": "Cuevora",
   "description": "Teleprompter features, actually free. Mirror mode, camera preview, adjustable speed, themes, and more.",
   "start_url": "/",
   "display": "standalone",
