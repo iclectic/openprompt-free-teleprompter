@@ -2,6 +2,12 @@
   command = "npm run build"
   publish = "dist"
 
+  [build.environment]
+    NODE_VERSION = "20"
+    VITE_APP_BASE_PATH = "/"
+    VITE_TERMS_URL = "/terms.html"
+    VITE_PRIVACY_URL = "/privacy.html"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

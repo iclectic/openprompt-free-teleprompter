@@ -105,7 +105,7 @@ VITE_TERMS_URL=https://your-domain.com/terms.html
 VITE_PRIVACY_URL=https://your-domain.com/privacy.html
 ```
 
-For GitHub Pages on this repository, the privacy-policy URL will be:
+For any root-domain deployment, the privacy-policy URL will be:
 `https://cuevora.com/privacy.html`
 
 ---
