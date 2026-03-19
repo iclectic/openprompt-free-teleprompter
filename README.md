@@ -105,8 +105,10 @@ VITE_TERMS_URL=https://your-domain.com/terms.html
 VITE_PRIVACY_URL=https://your-domain.com/privacy.html
 ```
 
-For any root-domain deployment, the privacy-policy URL will be:
-`https://cuevora.com/privacy.html`
+Current published privacy-policy URL:
+`https://69bbc688e05d76810d26318f--leafy-pika-31aede.netlify.app/`
+
+Note: the current Netlify deployment serves the privacy policy at the site root. As of March 19, 2026, `/privacy.html` and `/terms.html` on that deployment return `404`, so use the root URL above for the Play Console privacy-policy field until those pages are published separately.
 
 ---
 
