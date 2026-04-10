@@ -41,19 +41,17 @@ Cuevora is a cross-platform teleprompter application engineered to deliver a nat
 <div align="center">
 <table>
 <tr>
-<td align="center"><img src="docs/screenshots/splash-screen.png" width="200" /><br /><b>Splash Screen</b></td>
-<td align="center"><img src="docs/screenshots/home-screen.png" width="200" /><br /><b>Home</b></td>
-<td align="center"><img src="docs/screenshots/player-playback.png" width="200" /><br /><b>Teleprompter</b></td>
+<td align="center"><img src="docs/screenshots/splash-screen.jpeg" width="200" /><br /><b>Splash Screen</b></td>
+<td align="center"><img src="docs/screenshots/player-playback.jpeg" width="200" /><br /><b>Teleprompter</b></td>
+<td align="center"><img src="docs/screenshots/player-teleprompter.jpeg" width="200" /><br /><b>Scrolling</b></td>
 </tr>
 <tr>
-<td align="center"><img src="docs/screenshots/player-teleprompter.png" width="200" /><br /><b>Scrolling</b></td>
-<td align="center"><img src="docs/screenshots/player-mirror-mode.png" width="200" /><br /><b>Mirror Mode</b></td>
-<td align="center"><img src="docs/screenshots/camera-permission.png" width="200" /><br /><b>Camera Access</b></td>
+<td align="center"><img src="docs/screenshots/camera-permission.jpeg" width="200" /><br /><b>Camera Access</b></td>
+<td align="center"><img src="docs/screenshots/record-mode-camera.jpeg" width="200" /><br /><b>Record Mode</b></td>
+<td align="center"><img src="docs/screenshots/recording-preview.jpeg" width="200" /><br /><b>Recording Preview</b></td>
 </tr>
 <tr>
-<td align="center"><img src="docs/screenshots/record-mode-camera.png" width="200" /><br /><b>Record Mode</b></td>
-<td align="center"><img src="docs/screenshots/recording-preview.png" width="200" /><br /><b>Recording Preview</b></td>
-<td align="center"><img src="docs/screenshots/recording-share.png" width="200" /><br /><b>Share / Export</b></td>
+<td align="center" colspan="3"><img src="docs/screenshots/recording-share.jpeg" width="200" /><br /><b>Share / Export</b></td>
 </tr>
 </table>
 </div>
