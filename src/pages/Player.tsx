@@ -7,7 +7,7 @@ import { Slider } from '@/components/ui/slider';
 import {
   ArrowLeft, Play, Pause, SkipBack, SkipForward, FlipHorizontal,
   Type, AlignJustify, Palette, Timer, Video, Mic, MicOff,
-  RotateCcw, Gauge, Hand,
+  RotateCcw, Gauge, Hand, Camera, SwitchCamera,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVoiceControl, VoiceCommand } from '@/hooks/use-voice-control';
@@ -41,11 +41,18 @@ const Player = () => {
   const [gesturesEnabled, setGesturesEnabled] = useState(true);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
+  // Camera state
+  const [cameraOn, setCameraOn] = useState(false);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+  const [cameraError, setCameraError] = useState<string | null>(null);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const animRef = useRef<number>();
   const lastTimeRef = useRef<number>(0);
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const currentTheme = PLAYER_THEMES[theme];
 
@@ -225,6 +232,60 @@ const Player = () => {
     onPinchIn: () => setFontSize(s => Math.max(16, s - 2)),
   });
 
+  // Camera
+  const startCamera = useCallback(async (facing: 'user' | 'environment') => {
+    try {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      setCameraError(null);
+    } catch {
+      setCameraError('Camera access denied.');
+      setCameraOn(false);
+    }
+  }, []);
+
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  }, []);
+
+  const toggleCamera = useCallback(() => {
+    if (cameraOn) {
+      stopCamera();
+      setCameraOn(false);
+    } else {
+      setCameraOn(true);
+      startCamera(facingMode);
+    }
+  }, [cameraOn, facingMode, startCamera, stopCamera]);
+
+  const switchCamera = useCallback(() => {
+    const next = facingMode === 'user' ? 'environment' : 'user';
+    setFacingMode(next);
+    if (cameraOn) startCamera(next);
+  }, [facingMode, cameraOn, startCamera]);
+
+  // Clean up camera on unmount
+  useEffect(() => {
+    return () => {
+      streamRef.current?.getTracks().forEach(t => t.stop());
+    };
+  }, []);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -286,6 +347,29 @@ const Player = () => {
       className="relative flex min-h-screen flex-col overflow-hidden select-none"
       style={{ backgroundColor: currentTheme.bg, color: currentTheme.fg }}
     >
+      {/* Camera preview (behind everything) */}
+      {cameraOn && (
+        <div className="absolute inset-0 z-0 bg-black">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="h-full w-full object-cover"
+            style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
+          />
+          {cameraError && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/80 p-8">
+              <div className="text-center">
+                <Camera className="h-10 w-10 text-white/50 mx-auto mb-3" />
+                <p className="text-sm text-white/70">{cameraError}</p>
+                <Button className="mt-3" size="sm" onClick={() => startCamera(facingMode)}>Retry</Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Scroll progress bar */}
       <div
         className="absolute top-0 left-0 z-50 h-1 transition-all duration-150"
@@ -361,6 +445,26 @@ const Player = () => {
               variant="ghost"
               size="icon"
               className="touch-target"
+              style={{ color: cameraOn ? '#a78bfa' : currentTheme.fg }}
+              onClick={toggleCamera}
+            >
+              <Camera className="h-5 w-5" />
+            </Button>
+            {cameraOn && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="touch-target"
+                style={{ color: currentTheme.fg }}
+                onClick={switchCamera}
+              >
+                <SwitchCamera className="h-5 w-5" />
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="touch-target"
               style={{ color: currentTheme.fg }}
               onClick={() => navigate(`/record/${id}`)}
             >
@@ -394,6 +498,9 @@ const Player = () => {
         className="flex-1 overflow-y-auto px-6 pt-16 pb-40"
         style={{
           transform: mirrored ? 'scaleX(-1)' : 'none',
+          backgroundColor: cameraOn ? `${currentTheme.bg}cc` : 'transparent',
+          position: 'relative',
+          zIndex: 1,
         }}
         onScroll={handleScroll}
       >
