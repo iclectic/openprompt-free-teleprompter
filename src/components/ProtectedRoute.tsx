@@ -1,4 +1,3 @@
-import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import { Loader2 } from 'lucide-react';
 
@@ -7,7 +6,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, loading, isGuest } = useAuth();
+  const { loading } = useAuth();
 
   if (loading) {
     return (
@@ -15,10 +14,6 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
-  }
-
-  if (!user && !isGuest) {
-    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;

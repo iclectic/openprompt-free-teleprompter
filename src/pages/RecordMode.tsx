@@ -30,6 +30,24 @@ const formatDuration = (seconds: number) => {
   return `${m}:${s}`;
 };
 
+type RecordingStatus = 'idle' | 'preparing' | 'recording' | 'paused' | 'saving' | 'saved' | 'error';
+
+const blobToBase64 = (blob: Blob) => new Promise<string>((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    const result = reader.result;
+    if (typeof result !== 'string') {
+      reject(new Error('Unable to read recording data.'));
+      return;
+    }
+    resolve(result.split(',')[1] || '');
+  };
+  reader.onerror = () => reject(new Error('Unable to read recording data.'));
+  reader.readAsDataURL(blob);
+});
+
+const getRecordingExtension = (type: string) => type.includes('mp4') ? 'mp4' : 'webm';
+
 const RecordMode = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -50,9 +68,11 @@ const RecordMode = () => {
 
   // Recording state
   const [recording, setRecording] = useState(false);
+  const [recordingStatus, setRecordingStatus] = useState<RecordingStatus>('idle');
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
+  const [savedRecordingUri, setSavedRecordingUri] = useState<string | null>(null);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -101,9 +121,16 @@ const RecordMode = () => {
       setCameraError(null);
       return stream;
     } catch (err) {
-      const message = err instanceof DOMException && err.name === 'NotAllowedError'
-        ? 'Camera or microphone permission was denied. Please allow both permissions to record.'
-        : 'Camera or microphone is unavailable. Please check your device and browser permissions.';
+      let message = 'Camera or microphone is unavailable. Please check your device and browser permissions.';
+      if (err instanceof DOMException) {
+        if (err.name === 'NotAllowedError') {
+          message = 'Camera or microphone permission was denied. Allow both permissions in Android Settings, then retry.';
+        } else if (err.name === 'NotFoundError') {
+          message = 'No usable camera or microphone was found on this device.';
+        } else if (err.name === 'NotReadableError') {
+          message = 'Camera or microphone is already in use by another app. Close the other app, then retry.';
+        }
+      }
       setCameraError(message);
       setCameraActive(false);
       throw err;
@@ -135,18 +162,22 @@ const RecordMode = () => {
     if (requestingMedia || recording) return;
     if (!window.MediaRecorder) {
       setRecordingError('Video recording is not supported by this browser. Try Chrome, Edge, Safari 14.1+, or Firefox.');
+      setRecordingStatus('error');
       return;
     }
 
     void haptic('medium');
     setRequestingMedia(true);
+    setRecordingStatus('preparing');
     setRecordingError(null);
+    setSavedRecordingUri(null);
 
     let stream: MediaStream;
     try {
       stream = await startCamera();
     } catch {
       setRequestingMedia(false);
+      setRecordingStatus('error');
       return;
     }
 
@@ -183,18 +214,44 @@ const RecordMode = () => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
 
-      recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: mimeType || 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        setRecordedVideoUrl(url);
-        setRecordedBlob(blob);
-        chunksRef.current = [];
-        stopCamera();
+      recorder.onstop = async () => {
+        setRecordingStatus('saving');
+        try {
+          const blob = new Blob(chunksRef.current, { type: mimeType || 'video/webm' });
+          if (blob.size === 0) {
+            throw new Error('Recording was empty.');
+          }
+
+          const url = URL.createObjectURL(blob);
+          setRecordedVideoUrl(url);
+          setRecordedBlob(blob);
+          chunksRef.current = [];
+
+          if (Capacitor.isNativePlatform()) {
+            const ext = getRecordingExtension(blob.type);
+            const filename = `${(script?.title || 'recording').replace(/[^a-zA-Z0-9-_ ]/g, '') || 'recording'}-${Date.now()}.${ext}`;
+            const base64 = await blobToBase64(blob);
+            const writeResult = await Filesystem.writeFile({
+              path: filename,
+              data: base64,
+              directory: Directory.Documents,
+            });
+            setSavedRecordingUri(writeResult.uri);
+          }
+
+          setRecordingStatus('saved');
+        } catch {
+          setRecordingStatus('error');
+          setRecordingError('Recording stopped, but the video could not be saved. Check available storage and try again.');
+        } finally {
+          stopCamera();
+        }
       };
 
       recorder.start(1000); // collect data every second
       mediaRecorderRef.current = recorder;
       setRecording(true);
+      setRecordingStatus('recording');
       setCameraActive(true);
 
       // Start duration timer
@@ -204,19 +261,20 @@ const RecordMode = () => {
 
       // Also start the teleprompter scrolling
       setPlaying(true);
-    } catch (err) {
-      console.error('Failed to start recording:', err);
+    } catch {
       setRecordingError('Recording could not be started on this browser or device.');
+      setRecordingStatus('error');
       setPlaying(false);
       stopCamera();
     } finally {
       setRequestingMedia(false);
     }
-  }, [recordedVideoUrl, recording, requestingMedia, startCamera, stopCamera]);
+  }, [recordedVideoUrl, recording, requestingMedia, script?.title, startCamera, stopCamera]);
 
   const stopRecording = useCallback(() => {
     void haptic('medium');
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      setRecordingStatus('saving');
       mediaRecorderRef.current.stop();
     }
     mediaRecorderRef.current = null;
@@ -261,36 +319,28 @@ const RecordMode = () => {
     if (!recordedBlob || saving) return;
     setSaving(true);
 
-    const ext = recordedBlob.type.includes('mp4') ? 'mp4' : 'webm';
+    const ext = getRecordingExtension(recordedBlob.type);
     const filename = `${(script?.title || 'recording').replace(/[^a-zA-Z0-9-_ ]/g, '')}-${Date.now()}.${ext}`;
 
     try {
       if (Capacitor.isNativePlatform()) {
-        // Convert blob to base64
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            const result = reader.result as string;
-            // Strip the data:video/...;base64, prefix
-            const base64Data = result.split(',')[1];
-            resolve(base64Data);
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(recordedBlob);
-        });
-
-        // Write to device cache
-        const writeResult = await Filesystem.writeFile({
-          path: filename,
-          data: base64,
-          directory: Directory.Cache,
-        });
+        let uri = savedRecordingUri;
+        if (!uri) {
+          const base64 = await blobToBase64(recordedBlob);
+          const writeResult = await Filesystem.writeFile({
+            path: filename,
+            data: base64,
+            directory: Directory.Documents,
+          });
+          uri = writeResult.uri;
+          setSavedRecordingUri(uri);
+        }
 
         // Share the file (opens Android share sheet — user can save to Files, Drive, etc.)
         await Share.share({
           title: script?.title || 'Recording',
-          url: writeResult.uri,
-          dialogTitle: 'Save your recording',
+          url: uri,
+          dialogTitle: 'Share or save your recording',
         });
       } else {
         // Web fallback: standard download
@@ -304,18 +354,20 @@ const RecordMode = () => {
         URL.revokeObjectURL(url);
       }
       void haptic('light');
-    } catch (err) {
-      console.error('Failed to save recording:', err);
-      alert('Failed to save recording. Please try again.');
+    } catch {
+      setRecordingStatus('error');
+      setRecordingError('Failed to save or share the recording. Check available storage and try again.');
     } finally {
       setSaving(false);
     }
-  }, [recordedBlob, script?.title, saving]);
+  }, [recordedBlob, savedRecordingUri, script?.title, saving]);
 
   const dismissRecording = useCallback(() => {
     if (recordedVideoUrl) URL.revokeObjectURL(recordedVideoUrl);
     setRecordedVideoUrl(null);
     setRecordedBlob(null);
+    setSavedRecordingUri(null);
+    setRecordingStatus('idle');
   }, [recordedVideoUrl]);
 
   // Scroll animation
@@ -365,6 +417,16 @@ const RecordMode = () => {
   }
 
   const lines = script.content.split('\n');
+  const statusLabel: Record<RecordingStatus, string> = {
+    idle: 'Ready',
+    preparing: 'Preparing camera...',
+    recording: `Recording... ${formatDuration(recordingDuration)}`,
+    paused: `Paused ${formatDuration(recordingDuration)}`,
+    saving: 'Saving recording...',
+    saved: 'Recording saved',
+    error: 'Recording error',
+  };
+  const busyWithRecording = recordingStatus === 'preparing' || recordingStatus === 'saving';
 
   return (
     <div className="relative flex min-h-screen flex-col bg-black overflow-hidden">
@@ -394,11 +456,11 @@ const RecordMode = () => {
       </div>
 
       {/* Recording indicator */}
-      {recording && (
+      {(recording || busyWithRecording) && (
         <div className="absolute top-14 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-black/70 rounded-full px-4 py-1.5">
-          <div className="h-3 w-3 rounded-full bg-red-500 animate-pulse" />
+          <div className={`h-3 w-3 rounded-full ${recording ? 'bg-red-500 animate-pulse' : 'bg-violet-400'}`} />
           <span className="text-white text-sm font-mono font-medium">
-            Recording... {formatDuration(recordingDuration)}
+            {statusLabel[recordingStatus]}
           </span>
         </div>
       )}
@@ -445,7 +507,7 @@ const RecordMode = () => {
               className="bg-violet-600 hover:bg-violet-700 text-white gap-2"
             >
               <Download className="h-4 w-4" />
-              {saving ? 'Saving...' : 'Save Video'}
+              {saving ? 'Saving...' : Capacitor.isNativePlatform() ? 'Share or Save Video' : 'Save Video'}
             </Button>
             <Button
               variant="outline"
@@ -456,7 +518,7 @@ const RecordMode = () => {
             </Button>
           </div>
           <p className="text-white/50 text-xs mt-3">
-            Duration: {formatDuration(recordingDuration)}
+            {savedRecordingUri ? 'Saved in app storage. Use Share or Save Video to export it.' : 'Ready to save.'} Duration: {formatDuration(recordingDuration)}
           </p>
         </div>
       )}
@@ -516,7 +578,7 @@ const RecordMode = () => {
             className="h-11 rounded-full bg-white/20 px-4 text-white"
             aria-label={playing ? 'Pause preview scroll' : 'Preview scroll'}
             onClick={() => setPlaying(!playing)}
-            disabled={recording || requestingMedia}
+            disabled={recording || busyWithRecording}
           >
             {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
             <span className="ml-1 hidden sm:inline">{playing ? 'Pause Preview' : 'Preview Scroll'}</span>
@@ -534,11 +596,11 @@ const RecordMode = () => {
           ) : (
             <Button
               onClick={startRecording}
-              disabled={requestingMedia}
+              disabled={busyWithRecording}
               className="h-14 rounded-full bg-red-600 px-6 text-white hover:bg-red-700"
               aria-label="Start recording"
             >
-              {requestingMedia ? 'Preparing...' : 'Start Recording'}
+              {recordingStatus === 'preparing' ? 'Preparing...' : 'Start Recording'}
             </Button>
           )}
 

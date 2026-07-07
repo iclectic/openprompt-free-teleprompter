@@ -35,9 +35,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [isGuest, setIsGuest] = useState(() => {
     try {
-      return localStorage.getItem(GUEST_KEY) === 'true';
+      return localStorage.getItem(GUEST_KEY) !== 'false';
     } catch {
-      return false;
+      return true;
     }
   });
 
@@ -146,8 +146,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       if (auth) await firebaseSignOut(auth);
       setUser(null);
-      setIsGuest(false);
-      try { localStorage.removeItem(GUEST_KEY); } catch { /* noop */ }
+      setIsGuest(true);
+      try { localStorage.setItem(GUEST_KEY, 'true'); } catch { /* noop */ }
     } catch (err: unknown) {
       const e = err as { message?: string };
       setError(e.message || 'Failed to sign out');

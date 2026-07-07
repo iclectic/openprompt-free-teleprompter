@@ -36,3 +36,4 @@ ios/
 *.keystore
 *.jks
 keystore.properties
+android/app/google-services.json

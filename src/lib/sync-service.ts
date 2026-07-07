@@ -9,8 +9,7 @@ export interface SyncService {
 export const offlineOnlySyncService: SyncService = {
   isEnabled: () => false,
   async pushScripts() {
-    // TODO: Implement authenticated sync only after privacy, conflict handling,
-    // account deletion, and Play Data Safety disclosures are finalised.
+    // Authenticated sync is intentionally disabled for the local-first release.
   },
   async pullScripts() {
     return [];

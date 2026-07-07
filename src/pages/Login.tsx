@@ -2,23 +2,21 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
-import { Loader2, Mail } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { resolveLegalUrl } from '@/lib/utils';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { signInWithGoogle, signInWithApple, requestEmailLink, skipAuth, loading, actionLoading, error, user, isGuest, firebaseAvailable } = useAuth();
-  const [email, setEmail] = useState('');
+  const { signInWithGoogle, signInWithApple, skipAuth, loading, actionLoading, error, user, isGuest, firebaseAvailable } = useAuth();
   const isAndroidNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
   const showApple = !isAndroidNative;
   const privacyUrl = resolveLegalUrl(import.meta.env.VITE_PRIVACY_URL, 'privacy.html');
   const termsUrl = resolveLegalUrl(import.meta.env.VITE_TERMS_URL, 'terms.html');
   const authMessage = firebaseAvailable
     ? 'Sign in to sync your scripts across devices, or continue as a guest.'
-    : 'Account sync is currently unavailable. Continue as a guest.';
+    : 'Cuevora works offline. Continue locally without creating an account.';
 
   useEffect(() => {
     if (user || isGuest) navigate('/home', { replace: true });
@@ -168,35 +166,6 @@ const Login = () => {
                 Continue with Apple
               </Button>
             )}
-
-            <div className="rounded-xl border border-border bg-card/60 p-3">
-              <label className="text-xs font-medium text-muted-foreground" htmlFor="email-sign-in">
-                Email sign-in
-              </label>
-              <div className="mt-2 flex gap-2">
-                <Input
-                  id="email-sign-in"
-                  type="email"
-                  value={email}
-                  onChange={event => setEmail(event.target.value)}
-                  placeholder="you@example.com"
-                  className="h-12"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-12 w-12 shrink-0"
-                  onClick={() => requestEmailLink(email)}
-                  disabled={actionLoading === 'email'}
-                  aria-label="Request email sign-in link"
-                >
-                  {actionLoading === 'email' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                </Button>
-              </div>
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                Prepared for passwordless Firebase Auth. Guest mode remains available while release configuration is finalised.
-              </p>
-            </div>
 
             {/* Divider */}
             <div className="flex items-center gap-3 my-1">
