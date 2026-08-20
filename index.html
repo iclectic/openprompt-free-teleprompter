@@ -36,6 +36,28 @@
     <meta name="twitter:title" content="Cuevora — Free Teleprompter" />
     <meta name="twitter:image" content="/icons/icon-512.svg" />
 
+    <!-- Apply the persisted colour mode before first paint to avoid a flash of the wrong theme -->
+    <script>
+      (function () {
+        try {
+          var mode = 'system';
+          var raw = localStorage.getItem('cuevora_settings');
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            if (parsed && typeof parsed.colorMode === 'string') mode = parsed.colorMode;
+          }
+          var isDark =
+            mode === 'dark' ||
+            (mode !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var root = document.documentElement;
+          root.classList.toggle('dark', isDark);
+          root.style.colorScheme = isDark ? 'dark' : 'light';
+        } catch (e) {
+          /* Theme is best-effort; the app re-applies it on mount. */
+        }
+      })();
+    </script>
+
     <!-- Prevent tap highlight on mobile -->
     <style>
       * { -webkit-tap-highlight-color: transparent; }

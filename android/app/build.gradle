@@ -5,17 +5,12 @@ def keystoreProperties = new Properties()
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
-
-def signingValue = { propertyName, envName ->
-    keystoreProperties[propertyName] ?: System.getenv(envName)
+def configuredStoreFile = keystoreProperties['storeFile']
+def releaseStoreFile = configuredStoreFile ? rootProject.file(configuredStoreFile) : null
+if (releaseStoreFile == null || !releaseStoreFile.exists()) {
+    releaseStoreFile = rootProject.file("release.keystore")
 }
-
-def releaseStoreFile = signingValue('storeFile', 'CUEVORA_UPLOAD_STORE_FILE')
-def releaseStorePassword = signingValue('storePassword', 'CUEVORA_UPLOAD_STORE_PASSWORD')
-def releaseKeyAlias = signingValue('keyAlias', 'CUEVORA_UPLOAD_KEY_ALIAS')
-def releaseKeyPassword = signingValue('keyPassword', 'CUEVORA_UPLOAD_KEY_PASSWORD')
-def releaseStoreFileRef = releaseStoreFile ? rootProject.file(releaseStoreFile) : null
-def releaseSigningConfigured = releaseStoreFileRef?.exists() && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
+def hasReleaseKeystore = keystorePropertiesFile.exists() && releaseStoreFile.exists()
 
 android {
     namespace = "app.cuevora.teleprompter"
@@ -35,18 +30,18 @@ android {
     }
     signingConfigs {
         release {
-            if (releaseSigningConfigured) {
-                keyAlias releaseKeyAlias
-                keyPassword releaseKeyPassword
-                storeFile releaseStoreFileRef
-                storePassword releaseStorePassword
+            if (hasReleaseKeystore) {
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                storeFile releaseStoreFile
+                storePassword keystoreProperties['storePassword']
             }
         }
     }
     buildTypes {
         release {
             minifyEnabled false
-            if (releaseSigningConfigured) {
+            if (hasReleaseKeystore) {
                 signingConfig signingConfigs.release
             }
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
@@ -81,24 +76,4 @@ try {
     }
 } catch(Exception e) {
     logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
-}
-
-gradle.taskGraph.whenReady { taskGraph ->
-    def needsReleaseSigning = taskGraph.allTasks.any { task ->
-        task.name == "bundleRelease" || task.name == "assembleRelease"
-    }
-
-    if (needsReleaseSigning && !releaseSigningConfigured) {
-        throw new GradleException("""Release signing is not configured.
-
-Create android/keystore.properties locally, or provide the CUEVORA_UPLOAD_* environment variables.
-Do not commit keystore files, keystore.properties, passwords, or upload-key credentials.
-
-Required local properties:
-  storeFile=<path-to-upload-keystore.jks>
-  storePassword=<upload-keystore-password>
-  keyAlias=<upload-key-alias>
-  keyPassword=<upload-key-password>
-""")
-    }
 }

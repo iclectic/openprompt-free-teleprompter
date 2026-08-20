@@ -208,8 +208,8 @@ function addRevision(scriptId: string, content: string): void {
     } else {
       writeJson(REVISIONS_KEY, all);
     }
-  } catch (error) {
-    console.warn('Unable to save script revision', error);
+  } catch {
+    // Revision history is best-effort; script saving should continue.
   }
 }
 

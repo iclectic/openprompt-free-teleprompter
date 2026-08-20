@@ -20,13 +20,22 @@
     --secondary-foreground: 243 30% 12%;
 
     --muted: 243 15% 94%;
-    --muted-foreground: 243 10% 46%;
+    --muted-foreground: 243 12% 40%;
 
-    --accent: 38 93% 50%;
-    --accent-foreground: 0 0% 100%;
+    /* `accent` is the subtle hover/focus surface used by shadcn primitives
+       (buttons, menu items, calendar cells). It must stay low-contrast with a
+       readable foreground - the brand amber lives in `--brand`. */
+    --accent: 243 20% 91%;
+    --accent-foreground: 243 30% 12%;
 
-    --destructive: 0 84% 60%;
+    --brand: 38 93% 50%;
+    --brand-foreground: 243 40% 12%;
+
+    /* `destructive` is a solid fill paired with `destructive-foreground`.
+       `destructive-emphasis` is the text-safe red for use on page surfaces. */
+    --destructive: 0 72% 45%;
     --destructive-foreground: 0 0% 100%;
+    --destructive-emphasis: 0 72% 40%;
 
     --border: 243 13% 89%;
     --input: 243 13% 89%;
@@ -50,6 +59,8 @@
     --warning: 38 93% 50%;
     --player-bg: 243 47% 10%;
     --player-fg: 0 0% 95%;
+
+    color-scheme: light;
   }
 
   .dark {
@@ -69,16 +80,20 @@
     --secondary-foreground: 240 20% 95%;
 
     --muted: 244 25% 16%;
-    --muted-foreground: 240 10% 55%;
+    --muted-foreground: 240 14% 68%;
 
-    --accent: 38 93% 50%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 244 30% 24%;
+    --accent-foreground: 240 20% 95%;
 
-    --destructive: 0 62% 30%;
+    --brand: 38 93% 55%;
+    --brand-foreground: 243 40% 12%;
+
+    --destructive: 0 72% 45%;
     --destructive-foreground: 0 0% 100%;
+    --destructive-emphasis: 0 85% 72%;
 
-    --border: 244 25% 20%;
-    --input: 244 25% 20%;
+    --border: 244 25% 22%;
+    --input: 244 25% 22%;
     --ring: 255 93% 76%;
 
     --sidebar-background: 244 47% 10%;
@@ -94,6 +109,8 @@
     --surface-foreground: 240 20% 95%;
     --player-bg: 244 47% 5%;
     --player-fg: 0 0% 97%;
+
+    color-scheme: dark;
   }
 }
 
@@ -125,5 +142,14 @@
 
   .text-balance {
     text-wrap: balance;
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
   }
 }

@@ -4,6 +4,7 @@ import { getSettings, saveSettings, exportBackup, importBackup, clearLocalData }
 import { haptic } from '@/lib/haptics';
 import { AppSettings, PLAYER_THEMES, PlayerTheme, ColorMode } from '@/types/script';
 import { useAuth } from '@/lib/auth-context';
+import { useAppTheme } from '@/lib/theme-context';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -16,6 +17,7 @@ import { toast } from 'sonner';
 const Settings = () => {
   const navigate = useNavigate();
   const { user, isGuest, signOut, firebaseAvailable } = useAuth();
+  const { colorMode, setColorMode } = useAppTheme();
   const [settings, setSettings] = useState<AppSettings>(getSettings());
   const privacyUrl = resolveLegalUrl(import.meta.env.VITE_PRIVACY_URL, 'privacy.html');
   const termsUrl = resolveLegalUrl(import.meta.env.VITE_TERMS_URL, 'terms.html');
@@ -76,7 +78,7 @@ const Settings = () => {
     <div className="flex min-h-screen flex-col bg-background safe-area-padding">
       {/* Header */}
       <div className="flex items-center gap-2 px-4 pb-2" style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))' }}>
-        <Button variant="ghost" size="icon" className="touch-target text-white" onClick={() => navigate('/home')}>
+        <Button variant="ghost" size="icon" className="touch-target" onClick={() => navigate('/home')} aria-label="Back to scripts">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-lg font-bold text-foreground">Settings</h1>
@@ -108,7 +110,7 @@ const Settings = () => {
             <>
               <Button
                 variant="outline"
-                className="w-full touch-target justify-start text-destructive"
+                className="w-full touch-target justify-start text-destructive-emphasis hover:text-destructive-emphasis"
                 onClick={async () => {
                   await signOut();
                   navigate('/login', { replace: true });
@@ -135,18 +137,24 @@ const Settings = () => {
 
         <Section title="Appearance">
           <SettingRow label="Colour Mode">
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5" role="radiogroup" aria-label="Colour mode">
               {([{ key: 'system', label: 'System', icon: Monitor }, { key: 'light', label: 'Light', icon: Sun }, { key: 'dark', label: 'Dark', icon: Moon }] as const).map(({ key, label, icon: Icon }) => (
                 <button
                   key={key}
-                  className={`flex min-h-11 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                    settings.colorMode === key
+                  type="button"
+                  role="radio"
+                  aria-checked={colorMode === key}
+                  className={`flex min-h-11 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card ${
+                    colorMode === key
                       ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-secondary-foreground'
+                      : 'bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground'
                   }`}
-                  onClick={() => update({ colorMode: key as ColorMode })}
+                  onClick={() => {
+                    setColorMode(key as ColorMode);
+                    void haptic('selection');
+                  }}
                 >
-                  <Icon className="h-3.5 w-3.5" />
+                  <Icon aria-hidden="true" className="h-3.5 w-3.5" />
                   {label}
                 </button>
               ))}
@@ -163,14 +171,17 @@ const Settings = () => {
         {/* Defaults */}
         <Section title="Teleprompter Defaults">
           <SettingRow label="Default Theme">
-            <div className="flex gap-1.5">
+            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Default teleprompter theme">
               {(Object.keys(PLAYER_THEMES) as PlayerTheme[]).map(key => (
                 <button
                   key={key}
-                  className={`min-h-11 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  type="button"
+                  role="radio"
+                  aria-checked={settings.defaultTheme === key}
+                  className={`min-h-11 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card ${
                     settings.defaultTheme === key
                       ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-secondary-foreground'
+                      : 'bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground'
                   }`}
                   onClick={() => update({ defaultTheme: key })}
                 >
@@ -182,6 +193,7 @@ const Settings = () => {
 
           <SettingRow label={`Scroll Speed: ${settings.defaultSpeed}x`}>
             <Slider
+              aria-label="Default scroll speed"
               value={[settings.defaultSpeed]}
               onValueChange={([v]) => update({ defaultSpeed: v })}
               min={1} max={10} step={0.5}
@@ -190,6 +202,7 @@ const Settings = () => {
 
           <SettingRow label={`Font Size: ${settings.defaultFontSize}px`}>
             <Slider
+              aria-label="Default font size"
               value={[settings.defaultFontSize]}
               onValueChange={([v]) => update({ defaultFontSize: v })}
               min={16} max={72} step={2}
@@ -198,6 +211,7 @@ const Settings = () => {
 
           <SettingRow label={`Line Spacing: ${settings.defaultLineSpacing.toFixed(1)}`}>
             <Slider
+              aria-label="Default line spacing"
               value={[settings.defaultLineSpacing]}
               onValueChange={([v]) => update({ defaultLineSpacing: v })}
               min={1} max={3} step={0.1}
@@ -207,21 +221,27 @@ const Settings = () => {
           <SettingRow label="Words Per Minute">
             <Input
               type="number"
+              min={40}
+              max={400}
+              aria-label="Words per minute"
               value={settings.wpm}
               onChange={e => update({ wpm: Number(e.target.value) || 140 })}
-              className="w-20 text-right bg-surface"
+              className="w-20 text-right"
             />
           </SettingRow>
 
           <SettingRow label="Countdown Duration">
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5" role="radiogroup" aria-label="Countdown duration">
               {([3, 5, 10] as const).map(v => (
                 <button
                   key={v}
-                  className={`min-h-11 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                  type="button"
+                  role="radio"
+                  aria-checked={settings.countdownDuration === v}
+                  className={`min-h-11 rounded-md px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card ${
                     settings.countdownDuration === v
                       ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-secondary-foreground'
+                      : 'bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground'
                   }`}
                   onClick={() => update({ countdownDuration: v })}
                 >
@@ -235,22 +255,22 @@ const Settings = () => {
         {/* Display */}
         <Section title="Recording and Controls">
           <SettingRow label="Keep Screen Awake" inline>
-            <Switch checked={settings.keepScreenAwake} onCheckedChange={v => update({ keepScreenAwake: v })} />
+            <Switch aria-label="Keep screen awake" checked={settings.keepScreenAwake} onCheckedChange={v => update({ keepScreenAwake: v })} />
           </SettingRow>
           <SettingRow label="Mirror Mode Default" inline>
-            <Switch checked={settings.mirrorMode} onCheckedChange={v => update({ mirrorMode: v })} />
+            <Switch aria-label="Mirror mode default" checked={settings.mirrorMode} onCheckedChange={v => update({ mirrorMode: v })} />
           </SettingRow>
           <SettingRow label="Focus Line" inline>
-            <Switch checked={settings.focusLineEnabled} onCheckedChange={v => update({ focusLineEnabled: v })} />
+            <Switch aria-label="Focus line" checked={settings.focusLineEnabled} onCheckedChange={v => update({ focusLineEnabled: v })} />
           </SettingRow>
           <SettingRow label="Haptics" inline>
-            <Switch checked={settings.hapticsEnabled} onCheckedChange={v => update({ hapticsEnabled: v })} />
+            <Switch aria-label="Haptics" checked={settings.hapticsEnabled} onCheckedChange={v => update({ hapticsEnabled: v })} />
           </SettingRow>
           <SettingRow label="Gesture Controls" inline>
-            <Switch checked={settings.gestureControlsEnabled} onCheckedChange={v => update({ gestureControlsEnabled: v })} />
+            <Switch aria-label="Gesture controls" checked={settings.gestureControlsEnabled} onCheckedChange={v => update({ gestureControlsEnabled: v })} />
           </SettingRow>
           <SettingRow label="Voice Controls" inline>
-            <Switch checked={settings.voiceControlsEnabled} onCheckedChange={v => update({ voiceControlsEnabled: v })} />
+            <Switch aria-label="Voice controls" checked={settings.voiceControlsEnabled} onCheckedChange={v => update({ voiceControlsEnabled: v })} />
           </SettingRow>
           <SettingRow label="Adaptive Scroll" inline>
             <Switch checked={settings.adaptiveScrollEnabled} onCheckedChange={v => update({ adaptiveScrollEnabled: v })} />
@@ -267,7 +287,7 @@ const Settings = () => {
               <Upload className="h-4 w-4 mr-2" /> Restore
             </Button>
           </div>
-          <Button variant="outline" className="w-full touch-target justify-start text-destructive" onClick={handleClearLocalData}>
+          <Button variant="outline" className="w-full touch-target justify-start text-destructive-emphasis hover:text-destructive-emphasis" onClick={handleClearLocalData}>
             <Trash2 className="h-4 w-4 mr-2" /> Clear Local Data
           </Button>
         </Section>
@@ -275,7 +295,7 @@ const Settings = () => {
         {/* Privacy */}
         <Section title="Privacy">
           <SettingRow label="Analytics (opt-in)" inline>
-            <Switch checked={settings.analyticsOptIn} onCheckedChange={v => update({ analyticsOptIn: v })} />
+            <Switch aria-label="Analytics opt-in" checked={settings.analyticsOptIn} onCheckedChange={v => update({ analyticsOptIn: v })} />
           </SettingRow>
           <div className="rounded-xl bg-card p-4 border border-border/50">
             <div className="flex items-start gap-3">

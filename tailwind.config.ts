@@ -31,6 +31,11 @@ export default {
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
+          emphasis: "hsl(var(--destructive-emphasis))",
+        },
+        brand: {
+          DEFAULT: "hsl(var(--brand))",
+          foreground: "hsl(var(--brand-foreground))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",

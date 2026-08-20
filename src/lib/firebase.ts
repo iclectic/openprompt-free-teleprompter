@@ -6,8 +6,6 @@ import {
   OAuthProvider,
 } from 'firebase/auth';
 
-// TODO: Replace with your actual Firebase config from https://console.firebase.google.com
-// Go to Project Settings > General > Your apps > Firebase SDK snippet > Config
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
@@ -17,8 +15,8 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
 };
 
-// Only initialize Firebase if config is actually provided
-export const firebaseConfigured = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
+export const accountAuthEnabled = import.meta.env.VITE_ENABLE_ACCOUNT_AUTH === 'true';
+export const firebaseConfigured = accountAuthEnabled && !!(firebaseConfig.apiKey && firebaseConfig.projectId);
 
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;

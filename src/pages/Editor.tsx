@@ -14,7 +14,6 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { AccessibleStatus } from '@/components/AccessibleStatus';
 
 const Editor = () => {
   const { id } = useParams<{ id: string }>();
@@ -169,15 +168,14 @@ const Editor = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-background safe-area-padding">
-      <AccessibleStatus message={saveStatusLabel} assertive={saveStatus === 'error'} />
       {/* Header */}
       <div className="flex items-center gap-2 px-4 pb-2" style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))' }}>
-        <Button variant="ghost" size="icon" className="touch-target text-white" onClick={goBack} aria-label="Back to scripts">
+        <Button variant="ghost" size="icon" className="touch-target" onClick={goBack} aria-label="Back to scripts">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1" />
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          {saveStatus === 'saved' && <Check className="h-3 w-3 text-violet-400" />}
+        <div className="flex items-center gap-1 text-xs text-muted-foreground" role="status" aria-live="polite">
+          {saveStatus === 'saved' && <Check aria-hidden="true" className="h-3 w-3 text-primary" />}
           {saveStatusLabel}
         </div>
       </div>
@@ -185,28 +183,30 @@ const Editor = () => {
       {/* Title */}
       <div className="px-5">
         <Input
-          aria-label="Script title"
           value={title}
           onChange={e => handleTitleChange(e.target.value)}
           placeholder="Script title..."
-          className="border-none text-xl font-bold bg-transparent px-0 focus-visible:ring-0 text-foreground placeholder:text-muted-foreground/50"
+          aria-label="Script title"
+          className="border-none text-xl font-bold bg-transparent px-0 focus-visible:ring-0 text-foreground placeholder:text-muted-foreground"
         />
       </div>
 
       {/* Tags */}
       <div className="flex flex-wrap items-center gap-1.5 px-5 py-2">
         {tags.map(t => (
-          <Badge key={t} variant="secondary" className="gap-1 cursor-pointer" onClick={() => removeTag(t)}>
-            {t} <X className="h-3 w-3" />
-          </Badge>
+          <button key={t} type="button" onClick={() => removeTag(t)} aria-label={`Remove tag ${t}`} className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+            <Badge variant="secondary" className="gap-1">
+              {t} <X aria-hidden="true" className="h-3 w-3" />
+            </Badge>
+          </button>
         ))}
         <div className="flex items-center gap-1">
           <Input
-            aria-label="Add tag"
             value={newTag}
             onChange={e => setNewTag(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && addTag()}
             placeholder="Add tag..."
+            aria-label="Add tag"
             className="h-7 w-24 text-xs bg-transparent border-dashed"
           />
         </div>
@@ -215,11 +215,11 @@ const Editor = () => {
       {/* Content */}
       <div className="flex-1 px-5 py-2">
         <Textarea
-          aria-label="Script content"
           value={content}
           onChange={e => handleContentChange(e.target.value)}
           placeholder="Paste or type your script here..."
-          className="min-h-[300px] flex-1 resize-none border-none bg-transparent text-base leading-relaxed focus-visible:ring-0 text-foreground placeholder:text-muted-foreground/40"
+          aria-label="Script content"
+          className="min-h-[300px] flex-1 resize-none border-none bg-transparent text-base leading-relaxed focus-visible:ring-0 text-foreground placeholder:text-muted-foreground"
         />
       </div>
 
@@ -234,10 +234,10 @@ const Editor = () => {
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2 px-5 py-4 border-t border-white/10" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}>
+      <div className="flex items-center gap-2 px-5 py-4 border-t border-border" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}>
         {scriptId && (
           <Button
-            className="flex-1 touch-target bg-violet-600 hover:bg-violet-700 text-white"
+            className="flex-1 touch-target"
             onClick={() => {
               void haptic('medium');
               navigate(`/player/${scriptId}`);
@@ -246,19 +246,19 @@ const Editor = () => {
             <Play className="h-4 w-4 mr-2" /> Prompt
           </Button>
         )}
-        <Button variant="outline" size="icon" className="touch-target border-white/20 text-white hover:bg-white/10" onClick={handleImportTxt} aria-label="Import text file">
+        <Button variant="outline" size="icon" className="touch-target" onClick={handleImportTxt} aria-label="Import text file">
           <Upload className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="icon" className="touch-target border-white/20 text-white hover:bg-white/10" onClick={handleExportTxt} aria-label="Export as text file">
+        <Button variant="outline" size="icon" className="touch-target" onClick={handleExportTxt} aria-label="Export as text file">
           <Download className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="icon" className="touch-target border-white/20 text-white hover:bg-white/10" onClick={handleCopy} aria-label="Copy script to clipboard">
+        <Button variant="outline" size="icon" className="touch-target" onClick={handleCopy} aria-label="Copy script to clipboard">
           <Copy className="h-4 w-4" />
         </Button>
 
         <Dialog open={showHistory} onOpenChange={setShowHistory}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="icon" className="touch-target border-white/20 text-white hover:bg-white/10" aria-label="Open version history">
+            <Button variant="outline" size="icon" className="touch-target" aria-label="Open version history">
               <History className="h-4 w-4" />
             </Button>
           </DialogTrigger>
@@ -271,25 +271,17 @@ const Editor = () => {
                 <p className="text-sm text-muted-foreground py-8 text-center">No revisions yet. Edits are saved automatically.</p>
               ) : (
                 revisions.map(rev => (
-                  <div
+                  <button
                     key={rev.id}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`Restore revision from ${new Date(rev.timestamp).toLocaleString()}`}
-                    className="p-3 rounded-lg border border-border cursor-pointer hover:bg-accent/50 transition-colors"
+                    type="button"
+                    className="w-full rounded-lg border border-border p-3 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={() => restoreRevision(rev)}
-                    onKeyDown={event => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        restoreRevision(rev);
-                      }
-                    }}
                   >
                     <p className="text-xs text-muted-foreground mb-1">
                       {new Date(rev.timestamp).toLocaleString()}
                     </p>
                     <p className="text-sm text-foreground truncate">{rev.content.slice(0, 100)}</p>
-                  </div>
+                  </button>
                 ))
               )}
             </div>
