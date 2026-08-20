@@ -1,12 +1,11 @@
-import { useState, useCallback, useEffect } from "react";
-import { getSettings } from "@/lib/storage";
-import type { ColorMode } from "@/types/script";
+import { useState, useCallback } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/lib/auth-context";
+import { ThemeProvider } from "@/lib/theme-context";
 import SplashScreen from "./pages/SplashScreen";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -21,44 +20,19 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
-const resolveTheme = (mode: ColorMode): boolean => {
-  if (mode === 'dark') return true;
-  if (mode === 'light') return false;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
-};
-
 const App = () => {
   const [splashDone, setSplashDone] = useState(false);
   const handleSplashComplete = useCallback(() => setSplashDone(true), []);
-  const [isDark, setIsDark] = useState(() => resolveTheme(getSettings().colorMode));
-
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const onSystemChange = () => {
-      const mode = getSettings().colorMode;
-      if (mode === 'system') setIsDark(mq.matches);
-    };
-    mq.addEventListener('change', onSystemChange);
-
-    // Listen for settings changes from other components
-    const onStorage = () => setIsDark(resolveTheme(getSettings().colorMode));
-    window.addEventListener('cuevora-settings-changed', onStorage);
-
-    return () => {
-      mq.removeEventListener('change', onSystemChange);
-      window.removeEventListener('cuevora-settings-changed', onStorage);
-    };
-  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          {!splashDone && <SplashScreen onComplete={handleSplashComplete} />}
-          <BrowserRouter>
-            <div className={isDark ? 'dark' : ''}>
+      <ThemeProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            {!splashDone && <SplashScreen onComplete={handleSplashComplete} />}
+            <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
@@ -70,10 +44,10 @@ const App = () => {
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </div>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 };

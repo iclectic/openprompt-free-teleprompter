@@ -38,6 +38,7 @@ export default tseslint.config(
             "navigationMenuTriggerStyle",
             "toast",
             "toggleVariants",
+            "useAppTheme",
             "useAuth",
             "useFormField",
             "useSidebar",

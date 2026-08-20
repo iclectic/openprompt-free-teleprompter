@@ -48,6 +48,19 @@ const blobToBase64 = (blob: Blob) => new Promise<string>((resolve, reject) => {
 
 const getRecordingExtension = (type: string) => type.includes('mp4') ? 'mp4' : 'webm';
 
+const MEDIA_TIMEOUT_MS = 20000;
+
+class MediaTimeoutError extends Error {}
+
+const withMediaTimeout = <T,>(promise: Promise<T>, ms: number) =>
+  new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new MediaTimeoutError('Media request timed out')), ms);
+    promise.then(
+      (value) => { clearTimeout(timer); resolve(value); },
+      (error) => { clearTimeout(timer); reject(error); },
+    );
+  });
+
 const RecordMode = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -174,8 +187,11 @@ const RecordMode = () => {
 
     let stream: MediaStream;
     try {
-      stream = await startCamera();
-    } catch {
+      stream = await withMediaTimeout(startCamera(), MEDIA_TIMEOUT_MS);
+    } catch (err) {
+      if (err instanceof MediaTimeoutError) {
+        setRecordingError('Camera and microphone did not respond. Confirm Cuevora has Camera and Microphone permissions in Android Settings, then retry.');
+      }
       setRequestingMedia(false);
       setRecordingStatus('error');
       return;
@@ -440,20 +456,22 @@ const RecordMode = () => {
           className="h-full w-full object-cover"
           style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
         />
-        {cameraError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/80 p-8">
-            <div className="text-center">
-              <Camera className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">{cameraError}</p>
-              <p className="mt-2 text-xs text-muted-foreground">Open Android Settings if permissions were denied permanently, then return and retry.</p>
-              <div className="mt-3 flex justify-center gap-2">
-                <Button size="sm" onClick={() => startCamera().catch(() => {})}>Retry</Button>
-                <Button size="sm" variant="outline" onClick={() => navigate(-1)}>Back</Button>
-              </div>
+      </div>
+
+      {/* Camera error overlay — must sit above the script layer */}
+      {cameraError && (
+        <div className="absolute inset-0 z-[55] flex items-center justify-center bg-black/95 p-8" role="alert">
+          <div className="max-w-sm text-center">
+            <Camera aria-hidden="true" className="h-10 w-10 text-white/80 mx-auto mb-3" />
+            <p className="text-sm text-white">{cameraError}</p>
+            <p className="mt-2 text-xs text-white/80">Open Android Settings if permissions were denied permanently, then return and retry.</p>
+            <div className="mt-4 flex justify-center gap-2">
+              <Button size="sm" onClick={() => startCamera().catch(() => {})}>Retry</Button>
+              <Button size="sm" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/15 hover:text-white" onClick={() => navigate(-1)}>Back</Button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Recording indicator */}
       {(recording || busyWithRecording) && (
@@ -480,7 +498,7 @@ const RecordMode = () => {
             fontSize: `${fontSize}px`,
             lineHeight: 1.5,
             padding: splitView ? '1rem 1.5rem' : '4rem 2rem 50vh 2rem',
-            paddingTop: splitView ? '1rem' : '30vh',
+            paddingTop: splitView ? '1.5rem' : 'clamp(7.5rem, 18vh, 10rem)',
             paddingBottom: '60vh',
           }}
         >
@@ -504,7 +522,7 @@ const RecordMode = () => {
             <Button
               onClick={downloadRecording}
               disabled={saving}
-              className="bg-violet-600 hover:bg-violet-700 text-white gap-2"
+              className="gap-2"
             >
               <Download className="h-4 w-4" />
               {saving ? 'Saving...' : Capacitor.isNativePlatform() ? 'Share or Save Video' : 'Save Video'}
@@ -512,24 +530,24 @@ const RecordMode = () => {
             <Button
               variant="outline"
               onClick={dismissRecording}
-              className="text-white border-white/30 hover:bg-white/10"
+              className="border-white/40 bg-transparent text-white hover:bg-white/15 hover:text-white"
             >
               Dismiss
             </Button>
           </div>
-          <p className="text-white/50 text-xs mt-3">
+          <p className="text-white/80 text-xs mt-3 text-center">
             {savedRecordingUri ? 'Saved in app storage. Use Share or Save Video to export it.' : 'Ready to save.'} Duration: {formatDuration(recordingDuration)}
           </p>
         </div>
       )}
 
       {/* Top controls */}
-      <div className="absolute top-0 left-0 right-0 z-50 flex items-center gap-2 px-4 py-3 bg-black/50" style={{ paddingTop: 'calc(2rem + env(safe-area-inset-top, 0px))' }}>
-        <Button variant="ghost" size="icon" className="touch-target text-white" aria-label="Back" onClick={handleBack}>
+      <div className="fixed top-0 left-0 right-0 z-50 flex items-center gap-2 px-4 py-3 bg-black/50" style={{ paddingTop: 'calc(2rem + env(safe-area-inset-top, 0px))' }}>
+        <Button variant="ghost" size="icon" className="touch-target text-white hover:bg-white/15 hover:text-white" aria-label="Back" onClick={handleBack}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <span className="flex-1 text-sm font-medium text-white truncate">{script.title}</span>
-        <Button variant="ghost" size="icon" className={`touch-target ${recording ? 'text-white/30' : 'text-white'}`} aria-label="Switch camera" onClick={toggleCamera} disabled={recording}>
+        <Button variant="ghost" size="icon" className="touch-target text-white hover:bg-white/15 hover:text-white" aria-label="Switch camera" onClick={toggleCamera} disabled={recording}>
           <SwitchCamera className="h-5 w-5" />
         </Button>
         <Button
@@ -553,10 +571,11 @@ const RecordMode = () => {
       </div>
 
       {/* Bottom controls */}
-      <div className="absolute bottom-0 left-0 right-0 z-50 bg-black/60 safe-area-padding">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-black/60 safe-area-padding">
         <div className="flex items-center gap-1 px-4 py-1">
-          <Type className="h-3 w-3 text-white/60" />
+          <Type aria-hidden="true" className="h-3 w-3 text-white/80" />
           <Slider
+            aria-label="Font size"
             value={[fontSize]}
             onValueChange={([v]) => setFontSize(v)}
             min={16}
@@ -564,10 +583,10 @@ const RecordMode = () => {
             step={2}
             className="flex-1"
           />
-          <span className="text-xs text-white/60 w-8 text-right">{fontSize}</span>
+          <span className="text-xs text-white/80 w-8 text-right">{fontSize}</span>
         </div>
         <div className="flex items-center justify-center gap-4 px-6 py-3">
-          <Button variant="ghost" size="icon" className="h-11 w-11 rounded-full text-white" aria-label="Rewind"
+          <Button variant="ghost" size="icon" className="h-11 w-11 rounded-full text-white hover:bg-white/15 hover:text-white" aria-label="Rewind"
             onClick={() => { if (scrollRef.current) scrollRef.current.scrollTop = Math.max(0, scrollRef.current.scrollTop - speed * 100); }}>
             <SkipBack className="h-5 w-5" />
           </Button>
@@ -575,7 +594,8 @@ const RecordMode = () => {
           {/* Teleprompter preview only */}
           <Button
             size="sm"
-            className="h-11 rounded-full bg-white/20 px-4 text-white"
+            variant="ghost"
+            className="h-11 rounded-full border border-white/25 bg-transparent px-4 text-white hover:bg-white/10 hover:text-white"
             aria-label={playing ? 'Pause preview scroll' : 'Preview scroll'}
             onClick={() => setPlaying(!playing)}
             disabled={recording || busyWithRecording}
@@ -604,13 +624,13 @@ const RecordMode = () => {
             </Button>
           )}
 
-          <Button variant="ghost" size="icon" className="h-11 w-11 rounded-full text-white" aria-label="Forward"
+          <Button variant="ghost" size="icon" className="h-11 w-11 rounded-full text-white hover:bg-white/15 hover:text-white" aria-label="Forward"
             onClick={() => { if (scrollRef.current) scrollRef.current.scrollTop += speed * 100; }}>
             <SkipForward className="h-5 w-5" />
           </Button>
         </div>
         {recordingError && (
-          <p className="px-4 pb-3 text-center text-xs text-red-200">{recordingError}</p>
+          <p className="px-4 pb-3 text-center text-xs text-red-200" role="alert">{recordingError}</p>
         )}
       </div>
 

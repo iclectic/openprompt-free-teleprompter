@@ -109,7 +109,7 @@ const Home = () => {
       {/* Header */}
       <div className="px-5 pb-2" style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))' }}>
         <div className="flex items-center justify-between mb-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground cursor-pointer" onClick={() => navigate('/home')}>Cuevora</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Cuevora</h1>
           <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} className="touch-target" aria-label="Open settings">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
           </Button>
@@ -118,12 +118,14 @@ const Home = () => {
 
         {/* Search */}
         <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
+            type="search"
+            aria-label="Search scripts"
             placeholder="Search scripts..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="pl-10 bg-surface border-border"
+            className="bg-card pl-10"
           />
         </div>
 
@@ -203,7 +205,7 @@ const Home = () => {
       )}
 
       {/* Script List */}
-      <div className="flex-1 px-5">
+      <div className="flex-1 px-5 pb-28">
         <AnimatePresence>
           {filtered.length === 0 ? (
             <motion.div
@@ -239,21 +241,21 @@ const Home = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.03 }}
-                  className={`flex items-center gap-3 rounded-xl bg-card border border-border/50 cursor-pointer active:scale-[0.98] transition-transform ${viewMode === 'compact' ? 'p-3' : 'p-4'}`}
+                  className={`flex items-center gap-3 rounded-xl border border-border bg-card text-card-foreground shadow-sm cursor-pointer active:scale-[0.98] transition-transform hover:bg-accent/40 ${viewMode === 'compact' ? 'p-3' : 'p-4'}`}
                   onClick={() => navigate(`/editor/${script.id}`)}
                 >
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-foreground truncate">{script.title}</h3>
+                    <h3 className="font-medium text-card-foreground truncate">{script.title}</h3>
                     {viewMode === 'detailed' && (
                       <p className="text-sm text-muted-foreground truncate">
                         {script.content.slice(0, 90) || 'Empty script'}
                       </p>
                     )}
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                       <span className="text-xs text-muted-foreground">{formatDate(script.updatedAt)}</span>
                       <span className="text-xs text-muted-foreground">{getWordCount(script.content)} words</span>
                       {script.tags.map(t => (
-                        <Badge key={t} variant="outline" className="text-[10px] px-1.5 py-0">
+                        <Badge key={t} variant="outline" className="px-1.5 py-0 text-[10px]">
                           {t}
                         </Badge>
                       ))}
@@ -272,7 +274,7 @@ const Home = () => {
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="touch-target" aria-label={`Open options for ${script.title}`} onClick={e => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="touch-target text-muted-foreground" aria-label={`Open options for ${script.title}`} onClick={e => e.stopPropagation()}>
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -281,7 +283,7 @@ const Home = () => {
                           <Edit className="h-4 w-4 mr-2" /> Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          className="text-destructive"
+                          className="text-destructive-emphasis focus:text-destructive-emphasis"
                           onClick={() => handleDelete(script)}
                         >
                           <Trash2 className="h-4 w-4 mr-2" /> Delete
@@ -300,7 +302,7 @@ const Home = () => {
       <div className="fixed right-6" style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}>
         <Button
           size="lg"
-          className="h-14 w-14 rounded-full shadow-lg touch-target bg-violet-600 hover:bg-violet-700 text-white"
+          className="h-14 w-14 rounded-full shadow-lg touch-target"
           onClick={() => navigate('/editor/new')}
           aria-label="Create script"
         >

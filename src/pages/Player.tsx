@@ -59,7 +59,6 @@ const Player = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const animRef = useRef<number>();
   const lastTimeRef = useRef<number>(0);
-  const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -103,16 +102,6 @@ const Player = () => {
     }
     return () => { wakeLock?.release(); };
   }, [settings.keepScreenAwake]);
-
-  // Auto-hide controls after 4s of playback
-  useEffect(() => {
-    if (playing && showControls) {
-      controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 4000);
-    }
-    return () => {
-      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-    };
-  }, [playing, showControls]);
 
   // Smooth scroll animation
   const scrollStep = useCallback((timestamp: number) => {
@@ -247,7 +236,7 @@ const Player = () => {
   useGestureControls({
     elementRef: containerRef,
     enabled: gesturesEnabled,
-    onTapCenter: () => setShowControls(s => !s),
+    onTapCenter: () => setShowControls(true),
     onTapLeft: rewind,
     onTapRight: forward,
     onDoubleTap: togglePlay,
@@ -376,7 +365,7 @@ const Player = () => {
   return (
     <div
       ref={containerRef}
-      className="relative flex min-h-screen flex-col overflow-hidden select-none"
+      className="relative flex h-screen flex-col overflow-hidden select-none"
       style={{ backgroundColor: currentTheme.bg, color: currentTheme.fg }}
     >
       {/* Camera preview (behind everything) */}
@@ -390,15 +379,17 @@ const Player = () => {
             className="h-full w-full object-cover"
             style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
           />
-          {cameraError && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/80 p-8">
-              <div className="text-center">
-                <Camera className="h-10 w-10 text-white/50 mx-auto mb-3" />
-                <p className="text-sm text-white/70">{cameraError}</p>
-                <Button className="mt-3" size="sm" onClick={() => startCamera(facingMode)}>Retry</Button>
-              </div>
-            </div>
-          )}
+        </div>
+      )}
+
+      {/* Camera error overlay — must sit above the script layer */}
+      {cameraOn && cameraError && (
+        <div className="absolute inset-0 z-[55] flex items-center justify-center bg-black/95 p-8" role="alert">
+          <div className="max-w-sm text-center">
+            <Camera aria-hidden="true" className="h-10 w-10 text-white/80 mx-auto mb-3" />
+            <p className="text-sm text-white">{cameraError}</p>
+            <Button className="mt-4" size="sm" onClick={() => startCamera(facingMode)}>Retry</Button>
+          </div>
         </div>
       )}
 
@@ -442,7 +433,7 @@ const Player = () => {
             initial={{ y: -60, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -60, opacity: 0 }}
-            className="absolute top-0 left-0 right-0 z-40 flex items-center gap-2 px-4 py-3"
+            className="fixed top-0 left-0 right-0 z-40 flex items-center gap-2 px-4 py-3"
             style={{ backgroundColor: `${currentTheme.bg}ee`, paddingTop: 'calc(2rem + env(safe-area-inset-top, 0px))' }}
           >
             <Button
@@ -469,7 +460,7 @@ const Player = () => {
               <span className="block text-sm font-medium truncate" style={{ color: currentTheme.fg }}>
                 {script.title}
               </span>
-              <div className="flex items-center gap-3 text-[10px]" style={{ color: `${currentTheme.fg}66` }}>
+              <div className="flex items-center gap-3 text-[10px]" style={{ color: `${currentTheme.fg}c2` }}>
                 <span>{formatElapsed(elapsedSeconds)}</span>
                 <span>{Math.round(scrollProgress * 100)}%</span>
                 <span>{timeRemaining} left</span>
@@ -542,7 +533,7 @@ const Player = () => {
       {/* Text area */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-6 pt-16 pb-40"
+        className="min-h-0 flex-1 overflow-y-auto px-6 pt-28 pb-40"
         style={{
           transform: mirrored ? 'scaleX(-1)' : 'none',
           backgroundColor: cameraOn ? `${currentTheme.bg}cc` : 'transparent',
@@ -567,7 +558,7 @@ const Player = () => {
           style={{
             fontSize: `${fontSize}px`,
             lineHeight: lineSpacing,
-            paddingTop: '30vh',
+            paddingTop: 'clamp(1rem, 4vh, 2.5rem)',
             paddingBottom: '60vh',
           }}
         >
@@ -591,9 +582,10 @@ const Player = () => {
             initial={reduceMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={reduceMotion ? undefined : { opacity: 0 }}
-            className="absolute inset-0 z-[70] flex items-center justify-center bg-black/75 p-6"
+            className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-black/75 px-6 pb-6"
+            style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top, 0px))' }}
           >
-            <div className="max-w-sm rounded-2xl border border-white/15 bg-black/90 p-5 text-white shadow-2xl">
+            <div className="w-full max-w-sm rounded-2xl border border-white/15 bg-black/90 p-5 text-white shadow-2xl">
               <h2 className="text-lg font-semibold">Gesture guide</h2>
               <ul className="mt-3 space-y-2 text-sm text-white/75">
                 <li>Tap centre: show or hide controls</li>
@@ -625,7 +617,7 @@ const Player = () => {
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="absolute bottom-0 left-0 right-0 z-40 safe-area-padding"
+            className="fixed bottom-0 left-0 right-0 z-40 safe-area-padding"
             style={{ backgroundColor: `${currentTheme.bg}ee` }}
           >
             {/* Expandable panels */}
@@ -647,7 +639,7 @@ const Player = () => {
                             className="flex-1 rounded-lg py-2 text-xs font-medium transition-colors"
                             style={{
                               backgroundColor: speed === preset.value ? '#7c3aed' : `${currentTheme.fg}11`,
-                              color: speed === preset.value ? '#fff' : `${currentTheme.fg}88`,
+                              color: speed === preset.value ? '#fff' : `${currentTheme.fg}c2`,
                             }}
                             onClick={() => { setSpeed(preset.value); void haptic('selection'); }}
                           >
@@ -656,7 +648,7 @@ const Player = () => {
                         ))}
                       </div>
                       <div className="space-y-2">
-                        <div className="flex justify-between text-xs" style={{ color: `${currentTheme.fg}88` }}>
+                        <div className="flex justify-between text-xs" style={{ color: `${currentTheme.fg}c2` }}>
                           <span>Custom Speed</span>
                           <span>{speed}x</span>
                         </div>
@@ -674,7 +666,7 @@ const Player = () => {
                   {showPanel === 'font' && (
                     <div className="space-y-3">
                       <div className="space-y-2">
-                        <div className="flex justify-between text-xs" style={{ color: `${currentTheme.fg}88` }}>
+                        <div className="flex justify-between text-xs" style={{ color: `${currentTheme.fg}c2` }}>
                           <span>Font Size</span>
                           <span>{fontSize}px</span>
                         </div>
@@ -687,7 +679,7 @@ const Player = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <div className="flex justify-between text-xs" style={{ color: `${currentTheme.fg}88` }}>
+                        <div className="flex justify-between text-xs" style={{ color: `${currentTheme.fg}c2` }}>
                           <span>Line Spacing</span>
                           <span>{lineSpacing.toFixed(1)}</span>
                         </div>
@@ -737,7 +729,7 @@ const Player = () => {
                   variant="ghost"
                   size="sm"
                   className="text-xs gap-1"
-                  style={{ color: showPanel === key ? '#a78bfa' : `${currentTheme.fg}88` }}
+                  style={{ color: showPanel === key ? '#a78bfa' : `${currentTheme.fg}c2` }}
                   onClick={() => setShowPanel(showPanel === key ? 'none' : key)}
                 >
                   <Icon className="h-3.5 w-3.5" />
@@ -838,7 +830,7 @@ const Player = () => {
             </div>
 
             {/* Status bar */}
-            <div className="flex items-center justify-center gap-4 px-6 pb-3 text-[10px]" style={{ color: `${currentTheme.fg}55` }}>
+            <div className="flex items-center justify-center gap-4 px-6 pb-3 text-[10px]" style={{ color: `${currentTheme.fg}c2` }}>
               <span>{wordCount} words</span>
               <span>{speed}x speed</span>
               <span>{fontSize}px</span>
